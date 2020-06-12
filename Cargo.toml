@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "hello_rust",
+    "iron-gcd",
+    "mandlebrot",
+]
