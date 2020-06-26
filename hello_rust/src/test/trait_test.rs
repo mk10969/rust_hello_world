@@ -1,3 +1,8 @@
+// Index IndexMut
+use ::std::collections::HashMap;
+use ::std::ops::Index;
+use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::ops::{Add, AddAssign};
 
 #[derive(Clone, Copy, Debug)]
@@ -78,4 +83,164 @@ fn test_equals() {
     let t = "gdsagdsa".to_string();
     assert_ne!(s, t); // 参照で受け取るので、下記で標準出力される。これ大事！
     println!("s: {} t: {}", s, t);
+}
+
+// PartialEq の意味は、浮動小数点の 0.0/0.0の結果による。
+// ちなみに、x == x でtrueを返さない可能性があるものは、
+// f32, f64だけ。
+#[test]
+fn test_partial_eq() {
+    assert!(f64::is_nan(0.0 / 0.0));
+    assert_eq!(0.0 / 0.0 == 0.0 / 0.0, false); // これ、falseを返すので、partialEqと呼ばれる。
+    assert_eq!(0.0 / 0.0 != 0.0 / 0.0, true);
+}
+
+// 明示的に、Eqの実装をする旨を加える。
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Complex2<T> {
+    re: T,
+    im: T,
+}
+
+
+// 順序比較
+#[derive(Debug, PartialEq)]
+struct Interval<T> {
+    lower: T,
+    // 含まれる
+    upper: T,  // 含まれない
+}
+
+// ややこしいw
+impl<T: PartialOrd> PartialOrd<Interval<T>> for Interval<T> {
+    fn partial_cmp(&self, other: &Interval<T>) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else if self.lower >= other.upper {
+            Some(Ordering::Greater)
+        } else if self.upper <= other.lower {
+            Some(Ordering::Less)
+        } else {
+            None
+        }
+    }
+}
+
+#[test]
+fn test_index() {
+    let mut m = HashMap::new();
+    m.insert("十", 10);
+    m.insert("百", 100);
+    m.insert("千", 1000);
+    m.insert("万", 1_0000);
+    m.insert("億", 1_000_000);
+
+    assert_eq!(m["十"], 10);
+    assert_eq!(m["千"], 1000);
+
+    assert_eq!(*m.index("十"), 10);
+    assert_eq!(*m.index("千"), 1000);
+}
+
+// IndexMut
+#[test]
+fn test_index_mut() {
+    let mut desserts = vec!["Howalon".to_string(), "Soan papdi".to_string()];
+    desserts[0].push_str("finctional");
+    desserts[1].push_str("real");
+
+    use ::std::ops::IndexMut;
+    (*desserts.index_mut(0)).push_str("finctional");
+    (*desserts.index_mut(1)).push_str("real");
+}
+
+
+struct Image<P> {
+    width: usize,
+    pixels: Vec<P>,
+}
+
+impl<P: Default + Copy> Image<P> {
+    fn new(width: usize, height: usize) -> Image<P> {
+        Image {
+            width,
+            pixels: vec![P::default(); width * height],
+        }
+    }
+}
+
+impl<P> std::ops::Index<usize> for Image<P> {
+    type Output = [P];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let start = index * self.width;
+        &self.pixels[start..start + self.width]
+    }
+}
+
+impl<P> std::ops::IndexMut<usize> for Image<P> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let start = index * self.width;
+        &mut self.pixels[start..start + self.width]
+    }
+}
+
+#[test]
+fn test_my_struct_image() {
+    let image = Image::<u32>::new(100, 50);
+    println!("{:?}", image.pixels);
+
+    println!("{:?}", image[3][5]); // Image[x]は、[u32]を返すので、さらに、[u32]が中身を返す。。
+    println!("{:?}", image[1][1]);
+}
+
+
+#[test]
+fn test_default() {
+    let i: i8 = Default::default();
+    assert_eq!(i, 0);
+}
+
+
+#[test]
+fn test_default_trait() {
+    let squeares = [4, 9, 16, 25, 36, 49, 64];
+    let (power_of_two, impure): (HashSet<i32>, HashSet<i32>) = squeares
+        .iter()
+        .partition(|&n| n & (n - 1) == 0);
+
+    // 2の冪乗であるかの判定。へーこれでできるんだw
+    println!("{}", 9 & (9 - 1));
+    println!("{}", 4 & (4 - 1));
+
+
+    // assert_eq!(&power_of_two.len(), 3);
+    // assert_eq!(&impure.len(), 4);
+
+    println!("{:?}", &power_of_two);
+    println!("{:?}", &impure);
+}
+
+// Cow
+// 静的に確保された文字列定数 or 計算した文字列のどちらかを返す場合
+
+
+struct Person {
+    name: String
+}
+
+impl Person {
+    pub fn new(name: impl Into<String>) -> Self {
+        Person { name: name.into() }
+    }
+}
+
+#[test]
+fn test_into() {
+    // into型にすれば、どっちでも入るようになる。
+    let name: &str = "sato";
+    let person = Person::new(name);
+
+    let name: String = "sato".to_string();
+    let person = Person::new(name);
 }

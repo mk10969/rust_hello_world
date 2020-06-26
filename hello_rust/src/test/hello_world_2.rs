@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Result, Write};
 
-use serde::de::IntoDeserializer;
 use serde::Serialize;
 use serde_json;
 
