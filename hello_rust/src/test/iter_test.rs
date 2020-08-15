@@ -104,6 +104,12 @@ fn test_some_iterator() {
         Person { name: "test1".into(), age: 10 }
     ];
 
+    people1.iter()
+        .filter(|p| p.age < 20)
+        .map(|p| &p.name)
+        .for_each(|p| println!("{:?}", p));
+
+
     let set1 = people1.into_iter().collect::<HashSet<Person>>();
     let set2 = people2.into_iter().collect::<HashSet<Person>>();
     println!("=================");
